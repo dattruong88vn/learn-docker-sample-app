@@ -1,0 +1,83 @@
+
+    1. Docker đóng gói các project thành các Image, chạy bên trong các Container, độc lập hoàn toàn với máy tính.
+
+        - Mỗi container có nhiều port khác nhau để tương tác với máy tính:
+        
+            Ví dụ: 
+                docker run -d -p 80:80 docker/getting-started 
+                    --> docker chạy cổng 80 máy tính, nối với cồng 80 của container
+                    --> container có tên là getting-started (auto download từ docker hub)
+
+        - Cấu hình docker thông qua Dockerfile
+            + Nằm ở thư mục root của dự án, hướng dẫn docker run 1 container
+            + Thành phần: 
+                FROM node:12-alpine                         : phiên bản Node cho container
+                RUN apk add --no-cache python2 g++ make
+                WORKDIR /app                                : chọn thư mục làm việc
+                COPY . .                                    : copy toàn bộ file và folder từ root sang /app
+                RUN yarn install --production               : cài đặt các package cần thiết
+                CMD ["node", "src/index.js"]                : lệnh khởi chạy project
+                EXPOSE 3000     
+
+    2. Các lệnh Docker local cơ bản:
+        +   RUN: 
+                docker run -d -p 80:80 docker/getting-started (đã giải thích)
+        
+        +   BUILD:
+                docker build -t getting-started .
+
+                -->     getting-started: tên Image
+                -->     . (dấu chấm cuối): build tại thư mục hiện tại
+
+        +   STOP:
+                docker stop <container-id>
+
+        +   REMOVE
+                docker rm <container-id>
+
+        +   VIEW ALL CONTAINER: để lấy container-id
+                docker ps -a
+
+    3. Push Image lên Hub:
+        +   Tạo Docker hub (lấy được hub_name)
+
+        +   Tạo tag cho image: có thể hiểu là tạo ra 1 target image mới tham chiếu đến source (image đã có sẵn), 
+        trùng id với nhau và image mới có tên theo docker_hub_repo.    
+
+                Cú pháp:  docker tag <source-image-name | source-image-id> <docker-hub/docker-repo>:<tag-name>
+
+                        Ko có tag name (mặc định là latest):    docker tag getting-started dattruong88vn/getting-started                 
+                        Có tag name:                            docker tag getting-started dattruong88vn/getting-started:031022         
+                
+                --> tạo ra image mới với tên là dattruong88vn/getting-started với tagname tương ứng
+
+
+        +   Push image lên hub: push các image đã được tạo với tên hub và tagname:
+                Cú pháp: docker push <docker-hub-name> :<tag-name>
+
+                        docker push dattruong88vn/getting-started                
+                        docker push dattruong88vn/getting-started:031022         
+    4. Docker Cloud:
+        +   https://labs.play-with-docker.com/
+        +   Run các image lên cloud
+
+
+    5. Named Volume: có chức năng Persist Data giữa các container.
+        + Các container khác nhau khi run sẽ không lưu data của nhau.
+        + Lưu data vào 1 cục Volumn nằm bên ngoài tất cả các container.
+
+        + Cú pháp: docker volume create <name>
+
+                docker volume create todo-db
+        
+        + Khởi chạy lại container: 
+                docker run -dp 3000:3000 -v todo-db:/etc/todos getting-started
+
+            todo-db         : tên db
+            /etc/todos      : nơi lưu trữ data
+            getting-started : tên image
+
+    6. Bind Mount:
+        - Có chức năng control luôn source code, mỗi khi source code thay đổi sẽ update lên tất cả các 
+        container đang chạy.
+        - Có thể sử dụng để persist data như mục số 5, nhưng tự quản lý thay vì để docker quản lý
