@@ -80,4 +80,49 @@
     6. Bind Mount:
         - Có chức năng control luôn source code, mỗi khi source code thay đổi sẽ update lên tất cả các 
         container đang chạy.
-        - Có thể sử dụng để persist data như mục số 5, nhưng tự quản lý thay vì để docker quản lý
+        - Có thể sử dụng để persist data như mục số 5, nhưng tự quản lý thay vì để docker quản lý 
+
+    7. Multi Container: chia app thành nhiều container và tương tác với nhau.
+
+        - Mỗi container chỉ nên làm 1 việc (1 project) và làm tốt việc đó.
+        - 2 container có chung network thì có thể nói chuyện với nhau.
+        - Tạo network:
+            docker network create todo-app
+        - Start SQL container:
+                docker run -d `
+                    --network todo-app --network-alias mysql `
+                    -v todo-mysql-data:/var/lib/mysql `
+                    -e MYSQL_ROOT_PASSWORD=secret `
+                    -e MYSQL_DATABASE=todos `
+                    mysql:5.7
+
+        - Confirm database và running up:
+            docker exec -it <mysql-container-id> mysql -u root -p
+
+            +   -it: giữ phiên đăng nhập bên trong container sql để có thể check danh sách db
+            +   Kiểm tra DB: SHOW DATABASES;
+            +   Thoát: exit
+
+        - Kết nối Container Todo và Container SQL:
+            + Tạo 1 container bên trong network: (sử dụng image nicolaka/netshoot)
+                docker run -it --network todo-app nicolaka/netshoot
+            + Kiểm tra ip bên trong docker bên trong image ở trên:
+                dig mysql
+
+            + Connect mysql db:
+                docker exec -it <mysql-container-id> mysql -p todos
+
+    8. Docker compose: 
+        - Tạo file docker-compose.yml để config toàn bộ network, bao gồm 2 container todo và sql như bước 7.
+        - Nội dung file docker-compose.yml như trong project này, gồm 1 số nội dung chính:
+            + Version docker-compose: tùy version có thể support cho docker engine. Tham khảo tại: https://docs.docker.com/compose/compose-file/compose-versioning/
+            + Services: chính là network, bao gồm tên các container.
+                * todo-app-name: config các thông tin như image, port, workdir, command line để build, config môi trường (user, password, host, db)
+                * mysql-name: chính là container mysql, gòm các thông tin image, volumn, enviroment
+            + Volumn: đặt ngang hàng service
+        - Các lệnh:
+            + Start docker: docker compose up -d
+                -d: chạy ngầm bên dưới, ko chiếm terminal như run local host thông thường.
+                
+            + Stop docker: docker compose down
+
